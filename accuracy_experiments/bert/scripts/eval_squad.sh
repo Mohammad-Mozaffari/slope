@@ -1,0 +1,1 @@
+python /tmp/squad/v1.1/evaluate-v1.1.py /tmp/squad/v1.1/dev-v1.1.json ./results/mkor-h-squad-pruned-inputs-accurate/predictions.json

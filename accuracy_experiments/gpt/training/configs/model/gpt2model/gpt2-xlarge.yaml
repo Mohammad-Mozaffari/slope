@@ -1,0 +1,6 @@
+# @package _global_
+model:
+  config:
+    n_embd: 2560
+    n_head: 32
+    n_layer: 6

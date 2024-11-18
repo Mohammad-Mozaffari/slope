@@ -1,0 +1,4 @@
+.idea
+/pruning_kernels/cuda_cores/build/*
+/pruning_kernels/tensor_cores/build/*
+/pruning_kernels/tensor_cores/libcusparse_lt/*
