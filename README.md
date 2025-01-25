@@ -199,6 +199,131 @@ did not lead to any speedup.
 matrix, but it will degrade the accuracy of the model and is not recommended.
 
 
+## Experiments
+
+### Accuracy Results
+
+We have pretrained BERT-Large-Uncased and GPT-2 using different dense and sparse pretraining 
+methods. BERT is fine-tuned on GLUE and SQuAD v1.1 datasets and GPT-2 is evaluated on various 
+zero-shot downstream tasks. The results are reported in the following tables.
+
+* *r* denotes the relative rank of the low-rank adapters with respect to the hidden dimension of the model.
+
+#### BERT-Large-Uncased Pretraining
+
+
+| Dataset | Dense | *r=0* | *r=0.39%* | *r=1.56%* | *r=6.25%* |
+|---------|-------|-------|-----------|-----------|-----------|
+| SQuAD   | 90.44 | 89.1  | 89.1      | 89.2      | 89.5      |
+| GLUE    | 80.22 | 77.4  | 77.7      | 77.8      | 78.2      |
+
+| Sparsity Pattern (First 12 blocks - Last 12 blocks) | SQuAD (Ours) | SQuAD (Wanda) | GLUE (Ours) | GLUE (Wanda) |
+|-----------------------------------------------------|--------------|---------------|-------------|--------------|
+| 2:4-2:4                                             | **90.17**    | 89.93         | **79.08**   | 78.84        |
+| 2:4-2:8                                             | **89.85**    | 89.55         | **79.03**   | 77.24        |
+| 2:8-2:4                                             | **89.67**    | 86.57         | **75.92**   | 69.08        |
+
+
+#### GPT-2 Pretraining
+
+| Method               | Adapter Rank | MMLU ↑ | Arc Challenge ↑ | OpenBookQA ↑ | WinoGrande ↑ | HellaSwag ↑ | MathQA ↑ | PiQA ↑ | Race ↑ |
+|----------------------|--------------|---------|------------------|--------------|--------------|-------------|----------|--------|--------|
+| Dense                | N/A          | 22.9    | 20.7             | 16.2         | 50.6         | 28.5        | 21.8     | 59.8   | 28.4   |
+| **SLoPe**            | 2.1%         | 23.0    | 19.3             | **16.4**     | **50.8**     | **27.5**    | 20.8     | **57.6**| **27.2**|
+| **SLoPe**            | 0.05%        | 23.0    | **19.4**         | 16.2         | 50.5         | 27.4        | 20.8     | 57.5   | 27.1   |
+| **SLoPe**            | 0            | 23.0    | 19.3             | 16.0         | 50.1         | 27.5        | 20.8     | 57.4   | 27.1   |
+| **Extended SR-STE**  | 2.1%         | **24.2**| 18.3             | 14.2         | 47.5         | 26.9        | **21.4** | 55.2   | 24.2   |
+| **Extended SR-STE**  | 0.05%        | 24.1    | 18.4             | 14.2         | 47.5         | 26.8        | 21.2     | 54.5   | 24.2   |
+| **Extended SR-STE**  | 0            | 24.1    | 18.3             | 12.6         | 47.5         | 26.9        | 21.2     | 54.8   | 24.0   |
+
+### Speedup Results
+
+The following table summarizes the speedup results that different methods achieve in comparison 
+to the dense pretraining. Please note that the speedups achieved by this code base can be lower
+since the original results are obtained using more efficient (but less easy to use) integration
+of sparse cuSPARSELt kernels.
+
+* Training Speedup
+* 
+| **Model**                | **Method**      | **Training Speedup** | 
+|--------------------------|-----------------|----------------------|
+| **OPT-66B**              | **SLoPe**       | **1.20**             | 
+|                          | **FST**         | 1.06                 | 
+| **OPT-30B**              | **SLoPe**       | **1.22**             |
+|                          | **FST**         | 1.07                 | 
+| **OPT-13B**              | **SLoPe**       | **1.25**             | 
+|                          | **FST**         | 1.10                 | 
+| **OPT-6.6B**             | **SLoPe**       | **1.21**             | 
+|                          | **FST**         | 1.11                 | 
+| **OPT-2.6B**             | **SLoPe**       | **1.13**             | 
+|                          | **FST**         | 1.09                 | 
+| **LLaMA-3-8B**           | **SLoPe**       | **1.16**             |
+|                          | **FST**         | 1.09                 | 
+| **Mistral-v0.3-7B**      | **SLoPe**       | **1.15**             |
+|                          | **FST**         | 1.07                 | 
+
+* Inference Speedup
+
+| **Model**                | **Method**      | **No Adapter (*r = 0*)** | **1.56% Adapter** | **6.25% Adapter** |
+|--------------------------|-----------------|--------------------------|------------------------|------------------------|
+| **OPT-66B**              | **SLoPe**       | **1.46**                 | **1.43**               | **1.40**               |                   |                   |
+|                          | **FST**         | 1.00                     | 1.00                   | 1.00                   |                   |                   |
+| **OPT-30B**              | **SLoPe**       | **1.53**                 | **1.53**               | **1.50**               |                   |                   |
+|                          | **FST**         | 1.00                     | 1.00                   | 1.00                   |                   |                   |
+| **OPT-13B**              | **SLoPe**       | **1.54**                 | **1.39**               | **1.36**               |                   |                   |
+|                          | **FST**         | 1.00                     | 1.00                   | 1.00                   |                   |                   |
+| **OPT-6.6B**             | **SLoPe**       | **1.46**                 | **1.46**               | **1.43**               |                   |                   |
+|                          | **FST**         | 1.00                     | 1.00                   | 1.00                   |                   |                   |
+| **OPT-2.6B**             | **SLoPe**       | **1.31**                 | **1.25**               | **1.18**               |                   |                   |
+|                          | **FST**         | 1.00                     | 1.00                   | 1.00                   |                   |                   |
+| **LLaMA-3-8B**           | **SLoPe**       | **1.35**                 | **1.33**               | **1.32**               |                   |                   |
+|                          | **FST**         | 1.00                     | 1.00                   | 1.00                   |                   |                   |
+| **Mistral-v0.3-7B**      | **SLoPe**       | **1.34**                 | **1.32**               | **1.31**               |                   |                   |
+|                          | **FST**         | 1.00                     | 1.00                   | 1.00                   |                   |                   |
+
+### Memory Reduction Results
+
+* Training Memory Reduction
+
+| **Model**                | **Method**      | **Training Memory Reduction** | 
+|--------------------------|-----------------|------------------------------|
+| **OPT-66B**              | **SLoPe**       | **0.67**                     | 
+|                          | **FST**         | 1.27                         | 
+| **OPT-30B**              | **SLoPe**       | **0.67**                     |
+|                          | **FST**         | 1.17                         | 
+| **OPT-13B**              | **SLoPe**       | **0.68**                     | 
+|                          | **FST**         | 1.16                         | 
+| **OPT-6.6B**             | **SLoPe**       | **0.68**                     | 
+|                          | **FST**         | 1.19                         | 
+| **OPT-2.6B**             | **SLoPe**       | **0.67**                     | 
+|                          | **FST**         | 1.18                         | 
+| **LLaMA-3-8B**           | **SLoPe**       | **0.63**                     |
+|                          | **FST**         | 1.17                         | 
+| **Mistral-v0.3-7B**      | **SLoPe**       | **0.68**                     |
+|                          | **FST**         | 1.15                         | 
+
+
+* Inference Memory Reduction
+
+| **Model**                | **Method**      | **No Adapter (*r = 0*)** | **1.56% Adapter** | **6.25% Adapter** |
+|--------------------------|-----------------|--------------------------|-------------------|-------------------|
+| **OPT-66B**              | **SLoPe**       | **0.63**                 | **0.65**          | **0.70**          |
+|                          | **FST**         | 1.00                     | 1.00              | 1.00              |
+| **OPT-30B**              | **SLoPe**       | **0.61**                 | **0.63**          | **0.69**          |
+|                          | **FST**         | 1.00                     | 1.00              | 1.00              |
+| **OPT-13B**              | **SLoPe**       | **0.51**                 | **0.62**          | **0.68**          |
+|                          | **FST**         | 1.00                     | 1.00              | 1.00              |
+| **OPT-6.6B**             | **SLoPe**       | **0.60**                 | **0.62**          | **0.68**          |
+|                          | **FST**         | 1.00                     | 1.00              | 1.00              |
+| **OPT-2.6B**             | **SLoPe**       | **0.62**                 | **0.64**          | **0.70**          |
+|                          | **FST**         | 1.00                     | 1.00              | 1.00              |
+| **LLaMA-3-8B**           | **SLoPe**       | **0.66**                 | **0.69**          | **0.71**          |
+|                          | **FST**         | 1.00                     | 1.00              | 1.00              |
+| **Mistral-v0.3-7B**      | **SLoPe**       | **0.66**                 | **0.69**          | **0.65**          |
+|                          | **FST**         | 1.00                     | 1.00              | 1.00              |
+
+
+
 ## Citation
 If you use SLoPe in your research, please cite our paper:
 ```angular2html
